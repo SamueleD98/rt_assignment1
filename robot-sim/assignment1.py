@@ -4,8 +4,6 @@ import math
 import time
 from sr.robot import *
 
-"""delete me"""
-
 s_vision=70.0
 """ float: limit angle for the field of view relative to the silver tokens"""
 

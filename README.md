@@ -13,9 +13,10 @@ PyPyBox2D and PyYAML are more forgiving, and should install just fine using `pip
 
 To run the script in the simulator, use `python2 run.py assignment1.py`.  
 
-For further questions and/or problems read [here](https://github.com/CarmineD8/python_simulator/tree/master/robot-sim).
+For further knowledge read [here](https://github.com/CarmineD8/python_simulator/tree/master/robot-sim).
 
 ## What the code does  
+The first priority of the algorithm is to avoid collisions with the golden boxes thus the calculation of this danger is the first thing to do. It can then concentrate on finding the silver boxes and the consequent actions: the robot grabs the box and move it behind itself.  
 The code implements the following algorithm:  
 <pre>
 <b>while</b> the program is running
@@ -45,8 +46,10 @@ The code implements the following algorithm:
 			set cruising speed
 </pre>
 
- 
- The code uses some new functions and improves others:
+As can be seen, the robot has no memory of the past surrounding state. This makes it capable of moving in a dynamic environment, in fact it is constantly looking for obstacles: if an object moves between the robot and a silver box it is trying to grab, the robot will not continue to advance but it will stop and change direction.  
+The only thing the robot remembers is the number of times it tries to change direction to avoid an obstacle. This is necessary because sometimes the robot finds itself in a situation where there are obstacles ahead, on the left and on the right. Then it will start turning between left and right until the program stops. Knowing the number of times it tries to turn, it is possible to have the robot drive in reverse and find a different way to keep driving.  
+
+The code uses some new functions and improves others:
  + The **drive** function has been replaced by the **set_speed** function. The latter doesn't stop the robot at the end of its execution in order 
  to have a smoother ride.  
  + The functions to which the search for boxes is assigned are:  
@@ -58,6 +61,14 @@ The code implements the following algorithm:
 
 
 ## Further improvement
+The robot is able to turn continuously around the circuit but unfortunately after several turns it is possible that the robot changes the direction of rotation. For this it is possible to design an algorithm that makes the **robot able to recognize if it has turned more than 180° and adjust its trajectory accordingly**.
+
+Additionally, the continuous movement of the boxes inevitably brings them closer to the wall causing a collision or a direct passage of the robot (without it grasping the box). This can be solved by **repositioning the box halfway between the two walls each time the robot grabs it**. After the release, the robot will have to repeat the same actions in reverse order to return to the starting position and thus avoid changing the direction of rotation.
+
+Furthermore, the robot, with the current configuration, needs a long time to adjust the trajectory in order to drive in the long passage. The solution is not as simple as reducing the steering angle when approaching an obstacle: it would work but it would also increase the time it takes to go around corners. It should distinguish the different situations and apply the best solution.  
+
+Finally, adapting the speed to the distance of the closest object could **improve the overall performance of the robot**.  
+
 
 
  

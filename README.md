@@ -1,2 +1,2 @@
-# Assignment1_python_simulator
+# First assignment
 First assignment of the Research Track course

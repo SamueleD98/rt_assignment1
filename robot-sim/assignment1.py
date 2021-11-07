@@ -4,6 +4,8 @@ import math
 import time
 from sr.robot import *
 
+"""delete me"""
+
 s_vision=70.0
 """ float: limit angle for the field of view relative to the silver tokens"""
 
@@ -97,7 +99,7 @@ def find_next_golden_token():
    	
 def check_direction(dist):
    	"""
-  	Function to find the best direction to turn into (left or right, where the left one is preferred). The function counts the obstacles the robots
+  	Function to find the best direction to turn into (left or right, where the left one is preferred to assure an anti-clock wise turning). The function counts the obstacles the robots
   	will find turning right or left and it decides the best direction. If the number of obstacles are the same then it will increase the searching distance. 		It is preferable to start with a smaller distance to avoid uncertainties due to a wider field of view.
   	
     	Returns:
@@ -121,8 +123,8 @@ def check_direction(dist):
 	
 def adjust_trajectory(angle):
 	"""
-	Function to turn the robots with a speed that follows a sinusoidal law. The bigger is the angle, the faster the robots turns. 
-	If the angle is close to 0 then it is better to avoid to make a turn, let alone a fast one
+	Function to turn the robots of the given angle with a speed that follows a sinusoidal law. The bigger is the angle, the faster the robots turns. 
+	If the angle is close to 0 then it is better to avoid to make a turn, let alone a fast one, because it could deviate the route.
 	
 	Args:
 		angle (float): angle between the robot and the object to reach
@@ -154,7 +156,8 @@ while 1:
 			else:	#If the box is close but it can't grab it than it adjust its trajectory 
 				adjust_trajectory(s_angle)
 		elif s_dist<100:
-			set_speed(15)	#If the silver box has been detected the robots approach with a lower speed and adjusting the trajectory 
+			#If the silver box has been detected the robots approach it with a lower speed and adjusting the trajectory 
+			set_speed(15)	
 			print("Reaching it..\n")
     			adjust_trajectory(s_angle)
     		else:

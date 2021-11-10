@@ -16,8 +16,7 @@ To run the script in the simulator, use `python2 run.py assignment1.py`.
 For further knowledge read [here](https://github.com/CarmineD8/python_simulator/tree/master/robot-sim).
 
 ## Robot behaviour 
-The robot moves always in the same direction until a it finds a silver box or it get close to a golden one. In the arena, the golden boxes represent a wall and the robot must not touch them.
-The first priority of the algorithm is then to avoid collisions with the golden boxes, thus the calculation of this danger is the first thing to do. It can then concentrate on finding the silver boxes and the consequent actions: the robot grabs the box and move it behind itself. 
+The robot moves always in the same direction until it finds a silver box or it get too close to a golden one. In the arena, the golden boxes represent a wall and the robot must not touch them. The first priority of the algorithm is then to avoid collisions with the golden boxes, thus the calculation of this danger is the first thing to do. It can then concentrate on finding the silver boxes and the consequent actions: the robot grabs the box and move it behind itself. 
 
 The robot search for golden and silver boxes in different ways. As can be seen below, the field of view when it comes to searching silver boxes (gray area) is bigger than the one for golden boxes (yellow area). 
 The robot sensors, actually, can detect boxes around all directions but, without limiting the fields of view, the robot will keep reaching (or avoiding) the same silver (golden) box as it is the closest to the robot.
@@ -25,8 +24,7 @@ The field of view relative to the silver boxes is bigger to reduce the possibili
 
 ![Robot_field_of_view](/robot-sim/sr/robot_view.png)  
 
-The Robot behaves differently when 
-
+The Robot normally drives at a fixed cruising speed. When it see a silver box, it reduce its speed and adjust its trajectory to make sure to approach the box. If it finds a golden box, instead, it completely stops and search the best direction to turn into, so it can resume its trip.
 
 The code implements the following algorithm:  
 <pre>

@@ -16,14 +16,16 @@ To run the script in the simulator, use `python2 run.py assignment1.py`.
 For further knowledge read [here](https://github.com/CarmineD8/python_simulator/tree/master/robot-sim).
 
 ## Robot behaviour 
-The first priority of the algorithm is to avoid collisions with the golden boxes thus the calculation of this danger is the first thing to do. It can then concentrate on finding the silver boxes and the consequent actions: the robot grabs the box and move it behind itself. 
+The robot moves always in the same direction until a it finds a silver box or it get close to a golden one. In the arena, the golden boxes represent a wall and the robot must not touch them.
+The first priority of the algorithm is then to avoid collisions with the golden boxes, thus the calculation of this danger is the first thing to do. It can then concentrate on finding the silver boxes and the consequent actions: the robot grabs the box and move it behind itself. 
 
 The robot search for golden and silver boxes in different ways. As can be seen below, the field of view when it comes to searching silver boxes (gray area) is bigger than the one for golden boxes (yellow area). 
 The robot sensors, actually, can detect boxes around all directions but, without limiting the fields of view, the robot will keep reaching (or avoiding) the same silver (golden) box as it is the closest to the robot.
 The field of view relative to the silver boxes is bigger to reduce the possibility that the robot drives close a silver box without seeing it. On the contrary, the robot needs to see a golden box only when it's in the robot trajectory.
 
+![Robot_field_of_view](/robot-sim/sr/robot_view.png)  
 
-![Robot_field_of_view](/robot-sim/sr/robot_view.png)
+The Robot behaves differently when 
 
 
 The code implements the following algorithm:  

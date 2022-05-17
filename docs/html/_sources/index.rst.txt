@@ -1,0 +1,35 @@
+.. final_assignment documentation master file, created by
+   sphinx-quickstart on Tue Apr 12 17:40:02 2022.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+Rt2_assignment1's documentation!
+============================================
+
+This is the documentation of the RT2_assignment package!
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+
+
+User Interface Module
+=====================
+.. automodule:: scripts.user_interface
+	:members:
+
+Middleman Module
+=====================
+.. automodule:: scripts.middleman
+	:members:
+
+

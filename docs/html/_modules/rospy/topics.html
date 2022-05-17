@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rospy.topics &mdash; final_assignment 1.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/graphviz.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> final_assignment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">final_assignment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>rospy.topics</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for rospy.topics</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Software License Agreement (BSD License)</span>
+<span class="c1">#</span>
+<span class="c1"># Copyright (c) 2008, Willow Garage, Inc.</span>
+<span class="c1"># All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Redistribution and use in source and binary forms, with or without</span>
+<span class="c1"># modification, are permitted provided that the following conditions</span>
+<span class="c1"># are met:</span>
+<span class="c1">#</span>
+<span class="c1">#  * Redistributions of source code must retain the above copyright</span>
+<span class="c1">#    notice, this list of conditions and the following disclaimer.</span>
+<span class="c1">#  * Redistributions in binary form must reproduce the above</span>
+<span class="c1">#    copyright notice, this list of conditions and the following</span>
+<span class="c1">#    disclaimer in the documentation and/or other materials provided</span>
+<span class="c1">#    with the distribution.</span>
+<span class="c1">#  * Neither the name of Willow Garage, Inc. nor the names of its</span>
+<span class="c1">#    contributors may be used to endorse or promote products derived</span>
+<span class="c1">#    from this software without specific prior written permission.</span>
+<span class="c1">#</span>
+<span class="c1"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS</span>
+<span class="c1"># &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT</span>
+<span class="c1"># LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS</span>
+<span class="c1"># FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE</span>
+<span class="c1"># COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,</span>
+<span class="c1"># INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,</span>
+<span class="c1"># BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;</span>
+<span class="c1"># LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER</span>
+<span class="c1"># CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT</span>
+<span class="c1"># LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN</span>
+<span class="c1"># ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE</span>
+<span class="c1"># POSSIBILITY OF SUCH DAMAGE.</span>
+<span class="c1">#</span>
+<span class="c1"># Revision $Id$</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">rospy implementation of topics.</span>
+
+<span class="sd">Client API</span>
+<span class="sd">==========</span>
+
+<span class="sd">L{Publisher} and L{Subscriber} are the client API for topics.</span>
+
+<span class="sd">Internal Implementation</span>
+<span class="sd">=======================</span>
+
+<span class="sd">Internally, L{_TopicImpl} instances (_PublisherImpl/_SubscriberImpl)</span>
+<span class="sd">are used to manage actual transport connections.  The L{_TopicManager}</span>
+<span class="sd">is responsible for tracking the system-wide state of publications and</span>
+<span class="sd">subscriptions as well as the L{_TopicImpl} instances. More info is below.</span>
+<span class="sd"> </span>
+<span class="sd">L{_TopicManager}</span>
+<span class="sd">================</span>
+
+<span class="sd">The L{_TopicManager} does the backend topic bookkeeping for the local</span>
+<span class="sd">node.  Use L{get_topic_manager()} to access singleton. Actual topic</span>
+<span class="sd">implementations are done through the</span>
+<span class="sd">L{_TopicImpl}/L{_PublisherImpl}/L{_SubscriberImpl} hierarchy. Client</span>
+<span class="sd">code generates instances of type L{Publisher}/L{Subscriber}, which</span>
+<span class="sd">enable to client to create multiple publishers/subscribers of that</span>
+<span class="sd">topic that get controlled access to the underlying share connections.</span>
+
+<span class="sd">Common parent classes for all rospy topics. The rospy topic autogenerators</span>
+<span class="sd">create classes that are children of these implementations.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">import</span> <span class="nn">select</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">cStringIO</span> <span class="kn">import</span> <span class="n">StringIO</span> <span class="c1">#Python 2.x</span>
+    <span class="n">python3</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">def</span> <span class="nf">isstring</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">basestring</span><span class="p">)</span> <span class="c1">#Python 2.x</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">python3</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">StringIO</span><span class="p">,</span> <span class="n">BytesIO</span> <span class="c1">#Python 3.x</span>
+    <span class="k">def</span> <span class="nf">isstring</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="c1">#Python 3.x</span>
+
+<span class="kn">import</span> <span class="nn">threading</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+
+<span class="kn">import</span> <span class="nn">rosgraph.names</span>
+
+<span class="kn">from</span> <span class="nn">rospy.core</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">rospy.exceptions</span> <span class="kn">import</span> <span class="n">ROSSerializationException</span><span class="p">,</span> <span class="n">TransportTerminated</span>
+<span class="kn">from</span> <span class="nn">rospy.msg</span> <span class="kn">import</span> <span class="n">serialize_message</span><span class="p">,</span> <span class="n">args_kwds_to_message</span>
+
+<span class="kn">from</span> <span class="nn">rospy.impl.statistics</span> <span class="kn">import</span> <span class="n">SubscriberStatisticsLogger</span>
+
+<span class="kn">from</span> <span class="nn">rospy.impl.registration</span> <span class="kn">import</span> <span class="n">get_topic_manager</span><span class="p">,</span> <span class="n">set_topic_manager</span><span class="p">,</span> <span class="n">Registration</span><span class="p">,</span> <span class="n">get_registration_listeners</span>
+<span class="kn">from</span> <span class="nn">rospy.impl.tcpros</span> <span class="kn">import</span> <span class="n">get_tcpros_handler</span><span class="p">,</span> <span class="n">DEFAULT_BUFF_SIZE</span>
+<span class="kn">from</span> <span class="nn">rospy.impl.tcpros_pubsub</span> <span class="kn">import</span> <span class="n">QueuedConnection</span>
+
+<span class="n">_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;rospy.topics&#39;</span><span class="p">)</span>
+
+<span class="c1"># wrap genpy implementation and map it to rospy namespace</span>
+<span class="kn">import</span> <span class="nn">genpy</span>
+<span class="n">Message</span> <span class="o">=</span> <span class="n">genpy</span><span class="o">.</span><span class="n">Message</span>
+
+<span class="c1">#######################################################################</span>
+<span class="c1"># Base classes for all client-API instantiated pub/sub</span>
+<span class="c1">#</span>
+<span class="c1"># There are two trees: Topic and _TopicImpl. Topic is the client API</span>
+<span class="c1"># for interfacing with topics, while _TopicImpl implements the</span>
+<span class="c1"># underlying connection details. </span>
+
+<span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">select</span><span class="p">,</span> <span class="s1">&#39;EPOLLRDHUP&#39;</span><span class="p">):</span>
+    <span class="n">select</span><span class="o">.</span><span class="n">EPOLLRDHUP</span> <span class="o">=</span> <span class="mh">0x2000</span>
+
+
+<span class="k">class</span> <span class="nc">Topic</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class of L{Publisher} and L{Subscriber}&quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">data_class</span><span class="p">,</span> <span class="n">reg_type</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        @param name: graph resource name of topic, e.g. &#39;laser&#39;. </span>
+<span class="sd">        @type  name: str</span>
+<span class="sd">        @param data_class: message class for serialization</span>
+<span class="sd">        @type  data_class: L{Message}</span>
+<span class="sd">        @param reg_type Registration.PUB or Registration.SUB</span>
+<span class="sd">        @type  reg_type: str</span>
+<span class="sd">        @raise ValueError: if parameters are invalid</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">isstring</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;topic name is not a non-empty string&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">python3</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">name</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span> 
+                <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">UnicodeError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;topic name must be ascii/utf-8 compatible&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">data_class</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;topic parameter &#39;data_class&#39; is not initialized&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">type</span><span class="p">(</span><span class="n">data_class</span><span class="p">)</span> <span class="o">==</span> <span class="nb">type</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;data_class [</span><span class="si">%s</span><span class="s2">] is not a class&quot;</span><span class="o">%</span><span class="n">data_class</span><span class="p">)</span> 
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">data_class</span><span class="p">,</span> <span class="n">genpy</span><span class="o">.</span><span class="n">Message</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;data_class [</span><span class="si">%s</span><span class="s2">] is not a message data class&quot;</span><span class="o">%</span><span class="n">data_class</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="c1"># #2202</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rosgraph</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">is_legal_name</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+            <span class="kn">import</span> <span class="nn">warnings</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;&#39;</span><span class="si">%s</span><span class="s2">&#39; is not a legal ROS graph resource name. This may cause problems with other ROS tools&quot;</span><span class="o">%</span><span class="n">name</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        
+        <span class="c1"># this is a bit ugly, but necessary due to the fact that we allow</span>
+        <span class="c1"># topics and services to be initialized before the node</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rospy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">is_initialized</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">resolved_name</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">resolve_name_without_node_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># init_node() has been called, so we can do normal resolution</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">resolved_name</span> <span class="o">=</span> <span class="n">resolve_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolved_name</span> <span class="c1"># #1810 for backwards compatibility</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_class</span> <span class="o">=</span> <span class="n">data_class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">data_class</span><span class="o">.</span><span class="n">_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">md5sum</span> <span class="o">=</span> <span class="n">data_class</span><span class="o">.</span><span class="n">_md5sum</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reg_type</span> <span class="o">=</span> <span class="n">reg_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">impl</span> <span class="o">=</span> <span class="n">get_topic_manager</span><span class="p">()</span><span class="o">.</span><span class="n">acquire_impl</span><span class="p">(</span><span class="n">reg_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolved_name</span><span class="p">,</span> <span class="n">data_class</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_num_connections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        get the number of connections to other ROS nodes for this topic. For a Publisher,</span>
+<span class="sd">        this corresponds to the number of nodes subscribing. For a Subscriber, the number</span>
+<span class="sd">        of publishers.</span>
+<span class="sd">        @return: number of connections</span>
+<span class="sd">        @rtype: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">impl</span><span class="o">.</span><span class="n">get_num_connections</span><span class="p">()</span>
+        
+    <span class="k">def</span> <span class="nf">unregister</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        unpublish/unsubscribe from topic. Topic instance is no longer</span>
+<span class="sd">        valid after this call. Additional calls to unregister() have no effect.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># as we don&#39;t guard unregister, have to protect value of</span>
+        <span class="c1"># resolved_name for release_impl call</span>
+        <span class="n">resolved_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolved_name</span>
+        <span class="k">if</span> <span class="n">resolved_name</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">impl</span><span class="p">:</span>
+            <span class="n">get_topic_manager</span><span class="p">()</span><span class="o">.</span><span class="n">release_impl</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_type</span><span class="p">,</span> <span class="n">resolved_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">impl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolved_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">md5sum</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_class</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="c1"># #3808</span>
+<span class="k">class</span> <span class="nc">Poller</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    select.poll/kqueue abstraction to handle socket failure detection</span>
+<span class="sd">    on multiple platforms.  NOT thread-safe.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">select</span><span class="p">,</span> <span class="s1">&#39;kqueue&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">poller</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">kqueue</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_fd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_kqueue</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">remove_fd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">remove_kqueue</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">error_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_kqueue_iter</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kevents</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">select</span><span class="p">,</span> <span class="s1">&#39;epoll&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">poller</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">epoll</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_fd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_epoll</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">remove_fd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">remove_epoll</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">error_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_epoll_iter</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">select</span><span class="p">,</span> <span class="s1">&#39;poll&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">poller</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">poll</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_fd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_poll</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">remove_fd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">remove_poll</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">error_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_poll_iter</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1">#TODO: non-Noop impl for Windows</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">poller</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">noop</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_fd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">noop</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">remove_fd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">noop</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">error_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">noop_iter</span>
+
+    <span class="k">def</span> <span class="nf">noop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">noop_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">empty_generator</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">empty_generator</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">x</span>
+
+    <span class="k">def</span> <span class="nf">add_poll</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fd</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">poller</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">remove_poll</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fd</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">poller</span><span class="o">.</span><span class="n">unregister</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">error_poll_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">poller</span><span class="o">.</span><span class="n">poll</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">fd</span><span class="p">,</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">events</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">event</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">select</span><span class="o">.</span><span class="n">POLLHUP</span> <span class="o">|</span> <span class="n">select</span><span class="o">.</span><span class="n">POLLERR</span><span class="p">):</span>
+                <span class="k">yield</span> <span class="n">fd</span>
+
+    <span class="k">def</span> <span class="nf">add_epoll</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fd</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">poller</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">EPOLLHUP</span><span class="o">|</span><span class="n">select</span><span class="o">.</span><span class="n">EPOLLERR</span><span class="o">|</span><span class="n">select</span><span class="o">.</span><span class="n">EPOLLRDHUP</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">remove_epoll</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fd</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">poller</span><span class="o">.</span><span class="n">unregister</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">error_epoll_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">poller</span><span class="o">.</span><span class="n">poll</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">fd</span><span class="p">,</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">events</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">event</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">select</span><span class="o">.</span><span class="n">EPOLLHUP</span> <span class="o">|</span> <span class="n">select</span><span class="o">.</span><span class="n">EPOLLERR</span> <span class="o">|</span> <span class="n">select</span><span class="o">.</span><span class="n">EPOLLRDHUP</span><span class="p">):</span>
+                <span class="k">yield</span> <span class="n">fd</span>
+
+    <span class="k">def</span> <span class="nf">add_kqueue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fd</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kevents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">select</span><span class="o">.</span><span class="n">kevent</span><span class="p">(</span><span class="n">fd</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">error_kqueue_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">poller</span><span class="o">.</span><span class="n">control</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kevents</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">events</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">event</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">select</span><span class="o">.</span><span class="n">KQ_EV_ERROR</span> <span class="o">|</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_EV_EOF</span><span class="p">):</span>
+                <span class="k">yield</span> <span class="n">event</span><span class="o">.</span><span class="n">ident</span>
+            
+    <span class="k">def</span> <span class="nf">remove_kqueue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fd</span><span class="p">):</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">kevents</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">ident</span> <span class="o">==</span> <span class="n">fd</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kevents</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            
+<span class="k">class</span> <span class="nc">_TopicImpl</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class of internal topic implementations. Each topic has a</span>
+<span class="sd">    singleton _TopicImpl implementation for managing the underlying</span>
+<span class="sd">    connections.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">data_class</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Base constructor</span>
+<span class="sd">        @param name: graph resource name of topic, e.g. &#39;laser&#39;. </span>
+<span class="sd">        @type  name: str</span>
+<span class="sd">        @param data_class: message data class </span>
+<span class="sd">        @type  data_class: L{Message}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># #1810 made resolved/unresolved more explicit so we don&#39;t accidentally double-resolve</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resolved_name</span> <span class="o">=</span> <span class="n">resolve_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="c1">#NOTE: remapping occurs here!</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolved_name</span> <span class="c1"># for backwards compatibility</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_class</span> <span class="o">=</span> <span class="n">data_class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">data_class</span><span class="o">.</span><span class="n">_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">handler</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seq</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1"># lock is used for to serialize call order that methods that</span>
+        <span class="c1"># modify self.connections. Because add/removing connections is</span>
+        <span class="c1"># a rare event, we go through the extra hassle of making a</span>
+        <span class="c1"># copy of the connections/callbacks lists</span>
+        <span class="c1"># when modifying, then setting the reference to the new copy.</span>
+        <span class="c1"># With this pattern, other code can use these lists without</span>
+        <span class="c1"># having to acquire c_lock</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connections</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="c1"># number of Topic instances using this</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ref_count</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection_poll</span> <span class="o">=</span> <span class="n">Poller</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># very similar to close(), but have to be more careful in a __del__ what we call</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">c</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">pass</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">[:]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c_lock</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">handler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_class</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;close I/O&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_lock</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_lock</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="n">c</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                    <span class="k">except</span><span class="p">:</span>
+                        <span class="c1"># seems more logger.error internal than external logerr</span>
+                        <span class="n">_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">())</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">[:]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">handler</span> <span class="o">=</span> <span class="kc">None</span>
+            
+    <span class="k">def</span> <span class="nf">get_num_connections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_lock</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">has_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Query whether or not a connection with the associated \a</span>
+<span class="sd">        endpoint has been added to this object.</span>
+<span class="sd">        @param endpoint_id: endpoint ID associated with connection. </span>
+<span class="sd">        @type  endpoint_id: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># save reference to avoid lock</span>
+        <span class="n">conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">conn</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">endpoint_id</span> <span class="o">==</span> <span class="n">endpoint_id</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">has_connections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check to see if this topic is connected to other publishers/subscribers </span>
+<span class="sd">        @return: True if topic is connected</span>
+<span class="sd">        @rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">_remove_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connections</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="c1"># Remove from poll instance as well as connections</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">connection_poll</span><span class="o">.</span><span class="n">remove_fd</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># not necessarily correct from an abstraction point of</span>
+            <span class="c1"># view, but will prevent accident connection leaks</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="c1"># while c might be a rospy.impl.tcpros_base.TCPROSTransport instance</span>
+        <span class="c1"># connections might only contain the rospy.impl.tcpros_pubsub.QueuedConnection proxy</span>
+        <span class="c1"># finding the &quot;right&quot; connection is more difficult then</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">connections</span><span class="p">:</span>
+            <span class="n">connections</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+        <span class="c1"># therefore additionally check for fileno equality if available</span>
+        <span class="k">elif</span> <span class="n">c</span><span class="o">.</span><span class="n">fileno</span><span class="p">():</span>
+            <span class="n">matching_connections</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">conn</span> <span class="k">for</span> <span class="n">conn</span> <span class="ow">in</span> <span class="n">connections</span> <span class="k">if</span> <span class="n">conn</span><span class="o">.</span><span class="n">fileno</span><span class="p">()</span> <span class="o">==</span> <span class="n">c</span><span class="o">.</span><span class="n">fileno</span><span class="p">()]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">matching_connections</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">connections</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">matching_connections</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">add_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a connection to this topic.  If any previous connections</span>
+<span class="sd">        to same endpoint exist, drop them.</span>
+<span class="sd">        </span>
+<span class="sd">        @param c: connection instance</span>
+<span class="sd">        @type  c: Transport</span>
+<span class="sd">        @return: True if connection was added, ``bool``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rospyinfo</span><span class="p">(</span><span class="s2">&quot;topic[</span><span class="si">%s</span><span class="s2">] adding connection to [</span><span class="si">%s</span><span class="s2">], count </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resolved_name</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">endpoint_id</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">)))</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_lock</span><span class="p">:</span>
+            <span class="c1"># protect against race condition adding connection to closed sub</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+                <span class="n">rospyerr</span><span class="p">(</span>
+                    <span class="s2">&quot;ERROR: Race condition failure adding connection to closed subscriber</span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="s2">&quot;If you run into this please comment on &quot;</span>
+                    <span class="s2">&quot;https://github.com/ros/ros_comm/issues/544&quot;</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+            <span class="c1"># c_lock is to make add_connection thread-safe, but we</span>
+            <span class="c1"># still make a copy of self.connections so that the rest of the</span>
+            <span class="c1"># code can use self.connections in an unlocked manner</span>
+            <span class="n">new_connections</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">[:]</span>
+
+            <span class="c1"># if we have a connection to the same endpoint_id, drop</span>
+            <span class="c1"># the old one.</span>
+            <span class="k">for</span> <span class="n">oldc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">oldc</span><span class="o">.</span><span class="n">endpoint_id</span> <span class="o">==</span> <span class="n">c</span><span class="o">.</span><span class="n">endpoint_id</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_remove_connection</span><span class="p">(</span><span class="n">new_connections</span><span class="p">,</span> <span class="n">oldc</span><span class="p">)</span>
+
+            <span class="c1"># #3808: &quot;garbage collect&quot; bad sockets whenever we add new</span>
+            <span class="c1"># connections. This allows at most one stale connection</span>
+            <span class="c1"># per topic.  Otherwise, we only detect bad connections on</span>
+            <span class="c1"># write.  An alternative (given the current</span>
+            <span class="c1"># implementation) would be to start a thread that</span>
+            <span class="c1"># regularly polls all fds, but that would create a lot of</span>
+            <span class="c1"># synchronization events and also have a separate thread</span>
+            <span class="c1"># to manage.  It would be desirable to move to this, but</span>
+            <span class="c1"># this change is less impactful and keeps the codebase</span>
+            <span class="c1"># more stable as we move towards an entirely different</span>
+            <span class="c1"># event loop for rospy -- the heart of the problem is that</span>
+            <span class="c1"># rospy&#39;s i/o is blocking-based, which has the obvious</span>
+            <span class="c1"># issues.</span>
+
+            <span class="k">for</span> <span class="n">fd</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection_poll</span><span class="o">.</span><span class="n">error_iter</span><span class="p">():</span>
+                <span class="n">to_remove</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">new_connections</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">fileno</span><span class="p">()</span> <span class="o">==</span> <span class="n">fd</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">to_remove</span><span class="p">:</span>
+                    <span class="n">rospydebug</span><span class="p">(</span><span class="s2">&quot;removing connection to </span><span class="si">%s</span><span class="s2">, connection error detected&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">endpoint_id</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_remove_connection</span><span class="p">(</span><span class="n">new_connections</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+
+            <span class="c1"># Add new connection to poller, register for all events,</span>
+            <span class="c1"># though we only care about POLLHUP/ERR</span>
+            <span class="n">new_fd</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">fileno</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">new_fd</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">connection_poll</span><span class="o">.</span><span class="n">add_fd</span><span class="p">(</span><span class="n">new_fd</span><span class="p">)</span>
+            
+            <span class="c1"># add in new connection</span>
+            <span class="n">new_connections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">connections</span> <span class="o">=</span> <span class="n">new_connections</span>
+
+            <span class="c1"># connections make a callback when closed</span>
+            <span class="c1"># don&#39;t clobber an existing callback</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">c</span><span class="o">.</span><span class="n">cleanup_cb</span><span class="p">:</span>
+                <span class="n">c</span><span class="o">.</span><span class="n">set_cleanup_callback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">remove_connection</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">previous_callback</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">cleanup_cb</span>
+                <span class="n">new_callback</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">remove_connection</span>
+                <span class="k">def</span> <span class="nf">cleanup_cb_wrapper</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+                    <span class="n">new_callback</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+                    <span class="n">previous_callback</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+                <span class="n">c</span><span class="o">.</span><span class="n">set_cleanup_callback</span><span class="p">(</span><span class="n">cleanup_cb_wrapper</span><span class="p">)</span>
+            
+            <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">fds_to_remove</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">connection_poll</span><span class="o">.</span><span class="n">error_iter</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">fds_to_remove</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_lock</span><span class="p">:</span>
+                <span class="n">new_connections</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">[:]</span>
+                <span class="n">to_remove</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">new_connections</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">fileno</span><span class="p">()</span> <span class="ow">in</span> <span class="n">fds_to_remove</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">to_remove</span><span class="p">:</span>
+                    <span class="n">rospydebug</span><span class="p">(</span><span class="s2">&quot;removing connection to </span><span class="si">%s</span><span class="s2">, connection error detected&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">endpoint_id</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_remove_connection</span><span class="p">(</span><span class="n">new_connections</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">connections</span> <span class="o">=</span> <span class="n">new_connections</span>
+
+    <span class="k">def</span> <span class="nf">remove_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove connection from topic.</span>
+<span class="sd">        @param c: connection instance to remove</span>
+<span class="sd">        @type  c: Transport</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rospyinfo</span><span class="p">(</span><span class="s2">&quot;topic[</span><span class="si">%s</span><span class="s2">] removing connection to </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resolved_name</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">endpoint_id</span><span class="p">))</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_lock</span><span class="p">:</span>
+            <span class="c1"># c_lock is to make remove_connection thread-safe, but we</span>
+            <span class="c1"># still make a copy of self.connections so that the rest of the</span>
+            <span class="c1"># code can use self.connections in an unlocked manner            </span>
+            <span class="n">new_connections</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">[:]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_remove_connection</span><span class="p">(</span><span class="n">new_connections</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">connections</span> <span class="o">=</span> <span class="n">new_connections</span>
+
+    <span class="k">def</span> <span class="nf">get_stats_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="c1"># STATS</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the stats for this topic</span>
+<span class="sd">        @return: stats for topic in getBusInfo() format::</span>
+<span class="sd">          Publisher:</span>
+<span class="sd">          ((connection_id, destination_caller_id, direction, transport, topic_name, connected, connection_info_string)*)</span>
+<span class="sd">          Subscriber:</span>
+<span class="sd">          ((connection_id, publisher_xmlrpc_uri, direction, transport, topic_name, connected, connection_info_string)*)</span>
+<span class="sd">        @rtype: list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># save referenceto avoid locking</span>
+        <span class="n">connections</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span>
+        <span class="k">return</span> <span class="p">[(</span><span class="n">c</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">endpoint_id</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">direction</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">transport_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolved_name</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">get_transport_info</span><span class="p">())</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">connections</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">get_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="c1"># STATS</span>
+        <span class="sd">&quot;&quot;&quot;Get the stats for this topic (API stub)&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;subclasses must override&quot;</span><span class="p">)</span>
+
+<span class="c1">#  Implementation note: Subscriber attaches to a _SubscriberImpl</span>
+<span class="c1">#  singleton for that topic.  The underlying impl manages the</span>
+<span class="c1">#  connections for that publication and enables thread-safe access</span>
+
+<span class="k">class</span> <span class="nc">Subscriber</span><span class="p">(</span><span class="n">Topic</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class for registering as a subscriber to a specified topic, where</span>
+<span class="sd">    the messages are of a given type.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">data_class</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">callback_args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">queue_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">buff_size</span><span class="o">=</span><span class="n">DEFAULT_BUFF_SIZE</span><span class="p">,</span> <span class="n">tcp_nodelay</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor.</span>
+
+<span class="sd">        NOTE: for the queue_size and buff_size</span>
+<span class="sd">        parameters, rospy does not attempt to do intelligent merging</span>
+<span class="sd">        between multiple Subscriber instances for the same topic. As</span>
+<span class="sd">        they share the same underlying transport, multiple Subscribers</span>
+<span class="sd">        to the same topic can conflict with one another if they set</span>
+<span class="sd">        these parameters differently.</span>
+
+<span class="sd">        @param name: graph resource name of topic, e.g. &#39;laser&#39;.</span>
+<span class="sd">        @type  name: str</span>
+<span class="sd">        @param data_class: data type class to use for messages,</span>
+<span class="sd">          e.g. std_msgs.msg.String</span>
+<span class="sd">        @type  data_class: L{Message} class</span>
+<span class="sd">        @param callback: function to call ( fn(data)) when data is</span>
+<span class="sd">          received. If callback_args is set, the function must accept</span>
+<span class="sd">          the callback_args as a second argument, i.e. fn(data,</span>
+<span class="sd">          callback_args).  NOTE: Additional callbacks can be added using</span>
+<span class="sd">          add_callback().</span>
+<span class="sd">        @type  callback: fn(msg, cb_args)</span>
+<span class="sd">        @param callback_args: additional arguments to pass to the</span>
+<span class="sd">          callback. This is useful when you wish to reuse the same</span>
+<span class="sd">          callback for multiple subscriptions.</span>
+<span class="sd">        @type  callback_args: any</span>
+<span class="sd">        @param queue_size: maximum number of messages to receive at</span>
+<span class="sd">          a time. This will generally be 1 or None (infinite,</span>
+<span class="sd">          default). buff_size should be increased if this parameter</span>
+<span class="sd">          is set as incoming data still needs to sit in the incoming</span>
+<span class="sd">          buffer before being discarded. Setting queue_size</span>
+<span class="sd">          buff_size to a non-default value affects all subscribers to</span>
+<span class="sd">          this topic in this process.</span>
+<span class="sd">        @type  queue_size: int</span>
+<span class="sd">        @param buff_size: incoming message buffer size in bytes. If</span>
+<span class="sd">          queue_size is set, this should be set to a number greater</span>
+<span class="sd">          than the queue_size times the average message size. Setting</span>
+<span class="sd">          buff_size to a non-default value affects all subscribers to</span>
+<span class="sd">          this topic in this process.</span>
+<span class="sd">        @type  buff_size: int</span>
+<span class="sd">        @param tcp_nodelay: if True, request TCP_NODELAY from</span>
+<span class="sd">          publisher.  Use of this option is not generally recommended</span>
+<span class="sd">          in most cases as it is better to rely on timestamps in</span>
+<span class="sd">          message data. Setting tcp_nodelay to True enables TCP_NODELAY</span>
+<span class="sd">          for all subscribers in the same python process.</span>
+<span class="sd">        @type  tcp_nodelay: bool</span>
+<span class="sd">        @raise ROSException: if parameters are invalid</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Subscriber</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">data_class</span><span class="p">,</span> <span class="n">Registration</span><span class="o">.</span><span class="n">SUB</span><span class="p">)</span>
+        <span class="c1">#add in args that factory cannot pass in</span>
+
+        <span class="c1"># last person to set these to non-defaults wins, not much way</span>
+        <span class="c1"># around this</span>
+        <span class="k">if</span> <span class="n">queue_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">impl</span><span class="o">.</span><span class="n">set_queue_size</span><span class="p">(</span><span class="n">queue_size</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">buff_size</span> <span class="o">!=</span> <span class="n">DEFAULT_BUFF_SIZE</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">impl</span><span class="o">.</span><span class="n">set_buff_size</span><span class="p">(</span><span class="n">buff_size</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">callback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># #1852</span>
+            <span class="c1"># it&#39;s important that we call add_callback so that the</span>
+            <span class="c1"># callback can be invoked with any latched messages</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">impl</span><span class="o">.</span><span class="n">add_callback</span><span class="p">(</span><span class="n">callback</span><span class="p">,</span> <span class="n">callback_args</span><span class="p">)</span>
+            <span class="c1"># save arguments for unregister</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">callback</span> <span class="o">=</span> <span class="n">callback</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">callback_args</span> <span class="o">=</span> <span class="n">callback_args</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># initialize fields</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">callback</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">callback_args</span> <span class="o">=</span> <span class="kc">None</span>            
+        <span class="k">if</span> <span class="n">tcp_nodelay</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">impl</span><span class="o">.</span><span class="n">set_tcp_nodelay</span><span class="p">(</span><span class="n">tcp_nodelay</span><span class="p">)</span>        
+
+    <span class="k">def</span> <span class="nf">unregister</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        unpublish/unsubscribe from topic. Topic instance is no longer</span>
+<span class="sd">        valid after this call. Additional calls to unregister() have no effect.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">impl</span><span class="p">:</span>
+            <span class="c1"># It&#39;s possible to have a Subscriber instance with no</span>
+            <span class="c1"># associated callback</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">callback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">impl</span><span class="o">.</span><span class="n">remove_callback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">callback</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">callback_args</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">callback</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">callback_args</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">Subscriber</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">unregister</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">_SubscriberImpl</span><span class="p">(</span><span class="n">_TopicImpl</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Underlying L{_TopicImpl} implementation for subscriptions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">data_class</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ctor.</span>
+<span class="sd">        @param name: graph resource name of topic, e.g. &#39;laser&#39;.</span>
+<span class="sd">        @type  name: str</span>
+<span class="sd">        @param data_class: Message data class</span>
+<span class="sd">        @type  data_class: L{Message} class</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">_SubscriberImpl</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">data_class</span><span class="p">)</span>
+        <span class="c1"># client-methods to invoke on new messages. should only modify</span>
+        <span class="c1"># under lock. This is a list of 2-tuples (fn, args), where</span>
+        <span class="c1"># args are additional arguments for the callback, or None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span> <span class="o">=</span> <span class="p">[]</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">queue_size</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">buff_size</span> <span class="o">=</span> <span class="n">DEFAULT_BUFF_SIZE</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tcp_nodelay</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">statistics_logger</span> <span class="o">=</span> <span class="n">SubscriberStatisticsLogger</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> \
+            <span class="k">if</span> <span class="n">SubscriberStatisticsLogger</span><span class="o">.</span><span class="n">is_enabled</span><span class="p">()</span> \
+            <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;close I/O and release resources&quot;&quot;&quot;</span>
+        <span class="n">_TopicImpl</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">[:]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">statistics_logger</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">statistics_logger</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">statistics_logger</span> <span class="o">=</span> <span class="kc">None</span>
+        
+    <span class="k">def</span> <span class="nf">set_tcp_nodelay</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tcp_nodelay</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the value of TCP_NODELAY, which causes the Nagle algorithm</span>
+<span class="sd">        to be disabled for future topic connections, if the publisher</span>
+<span class="sd">        supports it.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tcp_nodelay</span> <span class="o">=</span> <span class="n">tcp_nodelay</span>
+        
+    <span class="k">def</span> <span class="nf">set_queue_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">queue_size</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the receive queue size. If more than queue_size messages</span>
+<span class="sd">        are waiting to be deserialized, they are discarded.</span>
+<span class="sd">        </span>
+<span class="sd">        @param queue_size int: incoming queue size. Must be positive integer or None.</span>
+<span class="sd">        @type  queue_size: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">queue_size</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">queue_size</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">elif</span> <span class="n">queue_size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ROSException</span><span class="p">(</span><span class="s2">&quot;queue size may not be set to zero&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">queue_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">queue_size</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ROSException</span><span class="p">(</span><span class="s2">&quot;queue size must be an integer&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">queue_size</span> <span class="o">=</span> <span class="n">queue_size</span>
+
+    <span class="k">def</span> <span class="nf">set_buff_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buff_size</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the receive buffer size. The exact meaning of this is</span>
+<span class="sd">        transport dependent.</span>
+<span class="sd">        @param buff_size: receive buffer size</span>
+<span class="sd">        @type  buff_size: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">buff_size</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ROSException</span><span class="p">(</span><span class="s2">&quot;buffer size must be an integer&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">buff_size</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ROSException</span><span class="p">(</span><span class="s2">&quot;buffer size must be a positive integer&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">buff_size</span> <span class="o">=</span> <span class="n">buff_size</span>
+        
+    <span class="k">def</span> <span class="nf">get_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="c1"># STATS</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the stats for this topic subscriber</span>
+<span class="sd">        @return: stats for topic in getBusStats() publisher format::</span>
+<span class="sd">           (topicName, connStats)</span>
+<span class="sd">        where connStats is::</span>
+<span class="sd">           [connectionId, bytesReceived, numSent, dropEstimate, connected]*</span>
+<span class="sd">        @rtype: list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># save reference to avoid locking</span>
+        <span class="n">conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span>
+        <span class="c1">#for now drop estimate is -1</span>
+        <span class="n">stats</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resolved_name</span><span class="p">,</span> 
+                 <span class="p">[(</span><span class="n">c</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">stat_bytes</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">stat_num_msg</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="ow">not</span> <span class="n">c</span><span class="o">.</span><span class="n">done</span><span class="p">)</span>
+                  <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">conn</span><span class="p">]</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="n">stats</span>
+
+    <span class="k">def</span> <span class="nf">add_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cb</span><span class="p">,</span> <span class="n">cb_args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Register a callback to be invoked whenever a new message is received</span>
+<span class="sd">        @param cb: callback function to invoke with message data</span>
+<span class="sd">          instance, i.e. fn(data). If callback args is set, they will</span>
+<span class="sd">          be passed in as the second argument.</span>
+<span class="sd">        @type  cb: fn(msg, cb_args)</span>
+<span class="sd">        @param cb_cargs: additional arguments to pass to callback</span>
+<span class="sd">        @type  cb_cargs: Any</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ROSException</span><span class="p">(</span><span class="s2">&quot;subscriber [</span><span class="si">%s</span><span class="s2">] has been closed&quot;</span><span class="o">%</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resolved_name</span><span class="p">))</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_lock</span><span class="p">:</span>
+            <span class="c1"># we lock in order to serialize calls to add_callback, but</span>
+            <span class="c1"># we copy self.callbacks so we can it</span>
+            <span class="n">new_callbacks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">[:]</span>
+            <span class="n">new_callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">cb</span><span class="p">,</span> <span class="n">cb_args</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span> <span class="o">=</span> <span class="n">new_callbacks</span>
+
+        <span class="c1"># #1852: invoke callback with any latched messages</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">latch</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_invoke_callback</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">latch</span><span class="p">,</span> <span class="n">cb</span><span class="p">,</span> <span class="n">cb_args</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">remove_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cb</span><span class="p">,</span> <span class="n">cb_args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Unregister a message callback.</span>
+<span class="sd">        @param cb: callback function</span>
+<span class="sd">        @type  cb: fn(msg, cb_args)</span>
+<span class="sd">        @param cb_cargs: additional arguments associated with callback</span>
+<span class="sd">        @type  cb_cargs: Any</span>
+<span class="sd">        @raise KeyError: if no matching callback</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_lock</span><span class="p">:</span>
+            <span class="c1"># we lock in order to serialize calls to add_callback, but</span>
+            <span class="c1"># we copy self.callbacks so we can it</span>
+            <span class="n">matches</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span> <span class="k">if</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">cb</span> <span class="ow">and</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">cb_args</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">matches</span><span class="p">:</span>
+                <span class="n">new_callbacks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">[:]</span>
+                <span class="c1"># remove the first match</span>
+                <span class="n">new_callbacks</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">matches</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span> <span class="o">=</span> <span class="n">new_callbacks</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">matches</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;no matching cb&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_invoke_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">cb</span><span class="p">,</span> <span class="n">cb_args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Invoke callback on msg. Traps and logs any exceptions raise by callback</span>
+<span class="sd">        @param msg: message data</span>
+<span class="sd">        @type  msg: L{Message}</span>
+<span class="sd">        @param cb: callback</span>
+<span class="sd">        @type  cb: fn(msg, cb_args)</span>
+<span class="sd">        @param cb_args: callback args or None</span>
+<span class="sd">        @type  cb_args: Any</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">cb_args</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">cb</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">cb_args</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cb</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_shutdown</span><span class="p">():</span>
+                <span class="n">logerr</span><span class="p">(</span><span class="s2">&quot;bad callback: </span><span class="si">%s</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">cb</span><span class="p">,</span> <span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">_logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;during shutdown, bad callback: </span><span class="si">%s</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">cb</span><span class="p">,</span> <span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()))</span>
+        
+    <span class="k">def</span> <span class="nf">receive_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msgs</span><span class="p">,</span> <span class="n">connection</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Called by underlying connection transport for each new message received</span>
+<span class="sd">        @param msgs: message data</span>
+<span class="sd">        @type msgs: [L{Message}]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># save reference to avoid lock</span>
+        <span class="n">callbacks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span>
+        <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">msgs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">statistics_logger</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">statistics_logger</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">connection</span><span class="o">.</span><span class="n">callerid_pub</span><span class="p">,</span> <span class="n">connection</span><span class="o">.</span><span class="n">stat_bytes</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">cb</span><span class="p">,</span> <span class="n">cb_args</span> <span class="ow">in</span> <span class="n">callbacks</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_invoke_callback</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">cb</span><span class="p">,</span> <span class="n">cb_args</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">SubscribeListener</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Callback API to receive notifications when new subscribers</span>
+<span class="sd">    connect and disconnect.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">peer_subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">,</span> <span class="n">topic_publish</span><span class="p">,</span> <span class="n">peer_publish</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        callback when a peer has subscribed from a topic</span>
+<span class="sd">        @param topic_name: topic name. NOTE: topic name will be resolved/remapped</span>
+<span class="sd">        @type  topic_name: str</span>
+<span class="sd">        @param topic_publish: method to publish message data to all subscribers</span>
+<span class="sd">        @type  topic_publish: fn(data)</span>
+<span class="sd">        @param peer_publish: method to publish message data to</span>
+<span class="sd">          new subscriber.  NOTE: behavior for the latter is</span>
+<span class="sd">          transport-dependent as some transports may be broadcast only.</span>
+<span class="sd">        @type  peer_publish: fn(data)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">peer_unsubscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">,</span> <span class="n">num_peers</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        callback when a peer has unsubscribed from a topic</span>
+<span class="sd">        @param topic_name: topic name. NOTE: topic name will be resolved/remapped</span>
+<span class="sd">        @type  topic_name: str</span>
+<span class="sd">        @param num_peers: number of remaining peers subscribed to topic</span>
+<span class="sd">        @type  num_peers: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+
+<span class="c1">#  Implementation note: Publisher attaches to a</span>
+<span class="c1">#  _PublisherImpl singleton for that topic.  The underlying impl</span>
+<span class="c1">#  manages the connections for that publication and enables</span>
+<span class="c1">#  thread-safe access</span>
+
+<span class="k">class</span> <span class="nc">Publisher</span><span class="p">(</span><span class="n">Topic</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class for registering as a publisher of a ROS topic.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">data_class</span><span class="p">,</span> <span class="n">subscriber_listener</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tcp_nodelay</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">latch</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">queue_size</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor</span>
+<span class="sd">        @param name: resource name of topic, e.g. &#39;laser&#39;. </span>
+<span class="sd">        @type  name: str</span>
+<span class="sd">        @param data_class: message class for serialization</span>
+<span class="sd">        @type  data_class: L{Message} class</span>
+<span class="sd">        @param subscriber_listener: listener for</span>
+<span class="sd">          subscription events. May be None.</span>
+<span class="sd">        @type  subscriber_listener: L{SubscribeListener}</span>
+<span class="sd">        @param tcp_nodelay: If True, sets TCP_NODELAY on</span>
+<span class="sd">          publisher&#39;s socket (disables Nagle algorithm). This results</span>
+<span class="sd">          in lower latency publishing at the cost of efficiency.</span>
+<span class="sd">        @type  tcp_nodelay: bool</span>
+<span class="sd">        @param latch: If True, the last message published is</span>
+<span class="sd">        &#39;latched&#39;, meaning that any future subscribers will be sent</span>
+<span class="sd">        that message immediately upon connection.</span>
+<span class="sd">        @type  latch: bool</span>
+<span class="sd">        @param headers: If not None, a dictionary with additional header</span>
+<span class="sd">        key-values being used for future connections.</span>
+<span class="sd">        @type  headers: dict</span>
+<span class="sd">        @param queue_size: The queue size used for asynchronously</span>
+<span class="sd">        publishing messages from different threads.  A size of zero</span>
+<span class="sd">        means an infinite queue, which can be dangerous.  When the</span>
+<span class="sd">        keyword is not being used or when None is passed all</span>
+<span class="sd">        publishing will happen synchronously and a warning message</span>
+<span class="sd">        will be printed.</span>
+<span class="sd">        @type  queue_size: int</span>
+<span class="sd">        @raise ROSException: if parameters are invalid     </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Publisher</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">data_class</span><span class="p">,</span> <span class="n">Registration</span><span class="o">.</span><span class="n">PUB</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">subscriber_listener</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">impl</span><span class="o">.</span><span class="n">add_subscriber_listener</span><span class="p">(</span><span class="n">subscriber_listener</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tcp_nodelay</span><span class="p">:</span>
+            <span class="n">get_tcpros_handler</span><span class="p">()</span><span class="o">.</span><span class="n">set_tcp_nodelay</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resolved_name</span><span class="p">,</span> <span class="n">tcp_nodelay</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">latch</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">impl</span><span class="o">.</span><span class="n">enable_latch</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">headers</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">impl</span><span class="o">.</span><span class="n">add_headers</span><span class="p">(</span><span class="n">headers</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">queue_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">impl</span><span class="o">.</span><span class="n">set_queue_size</span><span class="p">(</span><span class="n">queue_size</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">warnings</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The publisher should be created with an explicit keyword argument &#39;queue_size&#39;. &quot;</span>
+                <span class="s2">&quot;Please see http://wiki.ros.org/rospy/Overview/Publishers</span><span class="si">%20a</span><span class="s2">nd%20Subscribers for more information.&quot;</span><span class="p">,</span> <span class="ne">SyntaxWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">publish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Publish message data object to this topic. </span>
+<span class="sd">        Publish can either be called with the message instance to</span>
+<span class="sd">        publish or with the constructor args for a new Message</span>
+<span class="sd">        instance, i.e.::</span>
+<span class="sd">          pub.publish(message_instance)</span>
+<span class="sd">          pub.publish(message_field_1, message_field_2...)            </span>
+<span class="sd">          pub.publish(message_field_1=&#39;foo&#39;, message_field_2=&#39;bar&#39;)</span>
+<span class="sd">    </span>
+<span class="sd">        @param args : L{Message} instance, message arguments, or no args if keyword arguments are used</span>
+<span class="sd">        @param kwds : Message keyword arguments. If kwds are used, args must be unset</span>
+<span class="sd">        @raise ROSException: If rospy node has not been initialized</span>
+<span class="sd">        @raise ROSSerializationException: If unable to serialize</span>
+<span class="sd">        message. This is usually a type error with one of the fields.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">impl</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ROSException</span><span class="p">(</span><span class="s2">&quot;publish() to an unregistered() handle&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_initialized</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">ROSException</span><span class="p">(</span><span class="s2">&quot;ROS node has not been initialized yet. Please call init_node() first&quot;</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">args_kwds_to_message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_class</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwds</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">impl</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">impl</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">genpy</span><span class="o">.</span><span class="n">SerializationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># can&#39;t go to rospy.logerr(), b/c this could potentially recurse</span>
+            <span class="n">_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">())</span>
+            <span class="k">raise</span> <span class="n">ROSSerializationException</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">impl</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>            
+
+<span class="k">class</span> <span class="nc">_PublisherImpl</span><span class="p">(</span><span class="n">_TopicImpl</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Underlying L{_TopicImpl} implementation for publishers.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">data_class</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        @param name: name of topic, e.g. &#39;laser&#39;. </span>
+<span class="sd">        @type  name: str</span>
+<span class="sd">        @param data_class: Message data class    </span>
+<span class="sd">        @type  data_class: L{Message} class</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">_PublisherImpl</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">data_class</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">python3</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">buff</span> <span class="o">=</span> <span class="n">StringIO</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">buff</span> <span class="o">=</span> <span class="n">BytesIO</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">publock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">()</span> <span class="c1">#for acquire()/release</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subscriber_listeners</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># additional client connection headers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">headers</span> <span class="o">=</span> <span class="p">{}</span>
+        
+        <span class="c1"># publish latch, starts disabled</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_latch</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">latch</span> <span class="o">=</span> <span class="kc">None</span>
+        
+        <span class="c1"># maximum queue size for publishing messages</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">queue_size</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1">#STATS</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message_data_sent</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;close I/O and release resources&quot;&quot;&quot;</span>
+        <span class="n">_TopicImpl</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="c1"># release resources</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscriber_listeners</span><span class="p">:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscriber_listeners</span><span class="p">[:]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buff</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">buff</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">publock</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">headers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">buff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscriber_listeners</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">add_headers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">headers</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add connection headers to this Topic for future connections.</span>
+<span class="sd">        @param headers: key/values will be added to current connection</span>
+<span class="sd">        header set, overriding any existing keys if they conflict.</span>
+<span class="sd">        @type  headers: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">headers</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">enable_latch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Enable publish() latch. The latch contains the last published</span>
+<span class="sd">        message and is sent to any new subscribers.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_latch</span> <span class="o">=</span> <span class="kc">True</span>
+        
+    <span class="k">def</span> <span class="nf">set_queue_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">queue_size</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">queue_size</span> <span class="o">=</span> <span class="n">queue_size</span>
+
+    <span class="k">def</span> <span class="nf">get_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="c1"># STATS</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the stats for this topic publisher</span>
+<span class="sd">        @return: stats for topic in getBusStats() publisher format::</span>
+<span class="sd">          [topicName, messageDataBytes, connStats],</span>
+<span class="sd">        where connStats is::</span>
+<span class="sd">          [id, bytes, numMessages, connected]*</span>
+<span class="sd">        @rtype: list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># save reference to avoid lock</span>
+        <span class="n">conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resolved_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">message_data_sent</span><span class="p">,</span>
+                <span class="p">[(</span><span class="n">c</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">stat_bytes</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">stat_num_msg</span><span class="p">,</span> <span class="ow">not</span> <span class="n">c</span><span class="o">.</span><span class="n">done</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">conn</span><span class="p">]</span> <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">add_subscriber_listener</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">l</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a L{SubscribeListener} for subscribe events.</span>
+<span class="sd">        @param l: listener instance</span>
+<span class="sd">        @type  l: L{SubscribeListener}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subscriber_listeners</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">acquire</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;lock for thread-safe publishing to this transport&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">publock</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">publock</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+        
+    <span class="k">def</span> <span class="nf">release</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;lock for thread-safe publishing to this transport&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">publock</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">publock</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+        
+    <span class="k">def</span> <span class="nf">add_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a connection to this topic. This must be a PubTransport. If</span>
+<span class="sd">        the latch is enabled, c will be sent a the value of the</span>
+<span class="sd">        latch.</span>
+<span class="sd">        @param c: connection instance</span>
+<span class="sd">        @type  c: L{Transport}</span>
+<span class="sd">        @return: True if connection was added</span>
+<span class="sd">        @rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">QueuedConnection</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_size</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">_PublisherImpl</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_connection</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">publish_single</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">connection_override</span><span class="o">=</span><span class="n">c</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscriber_listeners</span><span class="p">:</span>
+            <span class="n">l</span><span class="o">.</span><span class="n">peer_subscribe</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resolved_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">publish</span><span class="p">,</span> <span class="n">publish_single</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_latch</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">latch</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">publock</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">latch</span><span class="p">,</span> <span class="n">connection_override</span><span class="o">=</span><span class="n">c</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+            
+    <span class="k">def</span> <span class="nf">remove_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove existing connection from this topic.</span>
+<span class="sd">        @param c: connection instance to remove</span>
+<span class="sd">        @type  c: L{Transport}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">_PublisherImpl</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">remove_connection</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+        <span class="n">num</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">)</span>                
+        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscriber_listeners</span><span class="p">:</span>
+            <span class="n">l</span><span class="o">.</span><span class="n">peer_unsubscribe</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resolved_name</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+            
+    <span class="k">def</span> <span class="nf">publish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">connection_override</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Publish the data to the topic. If the topic has no subscribers,</span>
+<span class="sd">        the method will return without any affect. Access to publish()</span>
+<span class="sd">        should be locked using acquire() and release() in order to</span>
+<span class="sd">        ensure proper message publish ordering.</span>
+
+<span class="sd">        @param message: message data instance to publish</span>
+<span class="sd">        @type  message: L{Message}</span>
+<span class="sd">        @param connection_override: publish to this connection instead of all</span>
+<span class="sd">        @type  connection_override: L{Transport}</span>
+<span class="sd">        @return: True if the data was published, False otherwise.</span>
+<span class="sd">        @rtype: bool</span>
+<span class="sd">        @raise genpy.SerializationError: if L{Message} instance is unable to serialize itself</span>
+<span class="sd">        @raise rospy.ROSException: if topic has been closed or was closed during publish()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#TODO: should really just use IOError instead of rospy.ROSException</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="c1"># during shutdown, the topic can get closed, which creates</span>
+            <span class="c1"># a race condition with user code testing is_shutdown</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_shutdown</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="n">ROSException</span><span class="p">(</span><span class="s2">&quot;publish() to a closed topic&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span>
+            
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_latch</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">latch</span> <span class="o">=</span> <span class="n">message</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_connections</span><span class="p">():</span>
+            <span class="c1">#publish() falls through</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="n">connection_override</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1">#copy connections so we can iterate safely</span>
+            <span class="n">conns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">conns</span> <span class="o">=</span> <span class="p">[</span><span class="n">connection_override</span><span class="p">]</span>
+
+        <span class="c1"># #2128 test our buffer. I don&#39;t know how this got closed in</span>
+        <span class="c1"># that case, but we can at least diagnose the problem.</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">buff</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+
+            <span class="c1"># serialize the message</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">seq</span> <span class="o">+=</span> <span class="mi">1</span> <span class="c1">#count messages published to the topic</span>
+            <span class="n">serialize_message</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+
+            <span class="c1"># send the buffer to all connections</span>
+            <span class="n">err_con</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
+
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">conns</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_shutdown</span><span class="p">():</span>
+                        <span class="n">c</span><span class="o">.</span><span class="n">write_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">TransportTerminated</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logdebug</span><span class="p">(</span><span class="s2">&quot;publisher connection to [</span><span class="si">%s</span><span class="s2">] terminated, see errorlog for details:</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">endpoint_id</span><span class="p">,</span> <span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()))</span>
+                    <span class="n">err_con</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="c1"># greater severity level</span>
+                    <span class="n">logdebug</span><span class="p">(</span><span class="s2">&quot;publisher connection to [</span><span class="si">%s</span><span class="s2">] terminated, see errorlog for details:</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">endpoint_id</span><span class="p">,</span> <span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()))</span>
+                    <span class="n">err_con</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+
+            <span class="c1"># reset the buffer and update stats</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">message_data_sent</span> <span class="o">+=</span> <span class="n">b</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span> <span class="c1">#STATS</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">truncate</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="c1"># operations on self.buff can fail if topic is closed</span>
+            <span class="c1"># during publish, which often happens during Ctrl-C.</span>
+            <span class="c1"># diagnose the error and report accordingly.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">is_shutdown</span><span class="p">():</span>
+                    <span class="c1"># we offer no guarantees on publishes that occur</span>
+                    <span class="c1"># during shutdown, so this is not exceptional.</span>
+                    <span class="k">return</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># this indicates that user-level code most likely</span>
+                    <span class="c1"># closed the topic, which is exceptional.</span>
+                    <span class="k">raise</span> <span class="n">ROSException</span><span class="p">(</span><span class="s2">&quot;topic was closed during publish()&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># unexpected, so re-raise original error</span>
+                <span class="k">raise</span>
+
+        <span class="c1"># remove any bad connections</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">err_con</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># connection will callback into remove_connection when</span>
+                <span class="c1"># we close it</span>
+                <span class="n">c</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+<span class="c1">#################################################################################</span>
+<span class="c1"># TOPIC MANAGER/LISTENER</span>
+
+<span class="k">class</span> <span class="nc">_TopicManager</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Tracks Topic objects</span>
+<span class="sd">    See L{get_topic_manager()} for singleton access</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;ctor.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">_TopicManager</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pubs</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1">#: { topic: _PublisherImpl }</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subs</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1">#: { topic: _SubscriberImpl }</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">topics</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span> <span class="c1"># [str] list of topic names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Condition</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;topicmanager initialized&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_pub_sub_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        get topic publisher and subscriber connection info for getBusInfo() api</span>
+<span class="sd">        @return: [bus info stats]</span>
+<span class="sd">          See getBusInfo() API for more data structure details.</span>
+<span class="sd">        @rtype: list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
+            <span class="n">info</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">chain</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pubs</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subs</span><span class="o">.</span><span class="n">values</span><span class="p">())):</span>
+                <span class="n">info</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">get_stats_info</span><span class="p">())</span>
+            <span class="k">return</span> <span class="n">info</span>
+            
+    <span class="k">def</span> <span class="nf">get_pub_sub_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        get topic publisher and subscriber stats for getBusStats() api</span>
+<span class="sd">        @return: [publisherStats, subscriberStats].</span>
+<span class="sd">          See getBusStats() API for more data structure details.</span>
+<span class="sd">        @rtype: list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pubs</span><span class="o">.</span><span class="n">values</span><span class="p">()],</span>\
+                   <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subs</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+            
+    <span class="k">def</span> <span class="nf">close_all</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Close all registered publication and subscriptions. Manager is</span>
+<span class="sd">        no longer usable after close.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">chain</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pubs</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subs</span><span class="o">.</span><span class="n">values</span><span class="p">())):</span>
+                <span class="n">t</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pubs</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">subs</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>        
+
+            
+    <span class="k">def</span> <span class="nf">check_all</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check all registered publication and subscriptions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">chain</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pubs</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subs</span><span class="o">.</span><span class="n">values</span><span class="p">())):</span>
+                <span class="n">t</span><span class="o">.</span><span class="n">check</span><span class="p">()</span>
+        
+    <span class="k">def</span> <span class="nf">_add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ps</span><span class="p">,</span> <span class="n">rmap</span><span class="p">,</span> <span class="n">reg_type</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add L{_TopicImpl} instance to rmap</span>
+<span class="sd">        @param ps: a pub/sub impl instance</span>
+<span class="sd">        @type  ps: L{_TopicImpl}</span>
+<span class="sd">        @param rmap: { topic: _TopicImpl} rmap to record instance in</span>
+<span class="sd">        @type  rmap: dict</span>
+<span class="sd">        @param reg_type: L{rospy.registration.Registration.PUB} or L{rospy.registration.Registration.SUB}</span>
+<span class="sd">        @type  reg_type: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">resolved_name</span> <span class="o">=</span> <span class="n">ps</span><span class="o">.</span><span class="n">resolved_name</span>
+        <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;tm._add: </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">resolved_name</span><span class="p">,</span> <span class="n">ps</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">reg_type</span><span class="p">)</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
+            <span class="n">rmap</span><span class="p">[</span><span class="n">resolved_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ps</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">topics</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">resolved_name</span><span class="p">)</span>
+            
+            <span class="c1"># NOTE: this call can take a lengthy amount of time (at</span>
+            <span class="c1"># least until its reimplemented to use queues)</span>
+            <span class="n">get_registration_listeners</span><span class="p">()</span><span class="o">.</span><span class="n">notify_added</span><span class="p">(</span><span class="n">resolved_name</span><span class="p">,</span> <span class="n">ps</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">reg_type</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_recalculate_topics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;recalculate self.topics. expensive&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">topics</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">x</span><span class="o">.</span><span class="n">resolved_name</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pubs</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span> <span class="o">+</span>
+                          <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">resolved_name</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subs</span><span class="o">.</span><span class="n">values</span><span class="p">()])</span>
+    
+    <span class="k">def</span> <span class="nf">_remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ps</span><span class="p">,</span> <span class="n">rmap</span><span class="p">,</span> <span class="n">reg_type</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove L{_TopicImpl} instance from rmap</span>
+<span class="sd">        @param ps: a pub/sub impl instance</span>
+<span class="sd">        @type  ps: L{_TopicImpl}</span>
+<span class="sd">        @param rmap: topic-&gt;_TopicImpl rmap to remove instance in</span>
+<span class="sd">        @type  rmap: dict</span>
+<span class="sd">        @param reg_type: L{rospy.registration.Registration.PUB} or L{rospy.registration.Registration.SUB}</span>
+<span class="sd">        @type  reg_type: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">resolved_name</span> <span class="o">=</span> <span class="n">ps</span><span class="o">.</span><span class="n">resolved_name</span>
+        <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;tm._remove: </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">resolved_name</span><span class="p">,</span> <span class="n">ps</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">reg_type</span><span class="p">)</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
+            <span class="k">del</span> <span class="n">rmap</span><span class="p">[</span><span class="n">resolved_name</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span> <span class="n">_recalculate_topics</span><span class="p">()</span>
+            
+            <span class="c1"># NOTE: this call can take a lengthy amount of time (at</span>
+            <span class="c1"># least until its reimplemented to use queues)</span>
+            <span class="n">get_registration_listeners</span><span class="p">()</span><span class="o">.</span><span class="n">notify_removed</span><span class="p">(</span><span class="n">resolved_name</span><span class="p">,</span> <span class="n">ps</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">reg_type</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reg_type</span><span class="p">,</span> <span class="n">resolved_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the L{_TopicImpl} for the specified topic. This is mainly for</span>
+<span class="sd">        testing purposes. Unlike acquire_impl, it does not alter the</span>
+<span class="sd">        ref count.</span>
+<span class="sd">        @param resolved_name: resolved topic name</span>
+<span class="sd">        @type  resolved_name: str</span>
+<span class="sd">        @param reg_type: L{rospy.registration.Registration.PUB} or L{rospy.registration.Registration.SUB}</span>
+<span class="sd">        @type  reg_type: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">reg_type</span> <span class="o">==</span> <span class="n">Registration</span><span class="o">.</span><span class="n">PUB</span><span class="p">:</span>
+            <span class="n">rmap</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pubs</span>
+        <span class="k">elif</span> <span class="n">reg_type</span> <span class="o">==</span> <span class="n">Registration</span><span class="o">.</span><span class="n">SUB</span><span class="p">:</span>
+            <span class="n">rmap</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">subs</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;invalid reg_type: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="n">s</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">resolved_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">acquire_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reg_type</span><span class="p">,</span> <span class="n">resolved_name</span><span class="p">,</span> <span class="n">data_class</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Acquire a L{_TopicImpl} for the specified topic (create one if it</span>
+<span class="sd">        doesn&#39;t exist).  Every L{Topic} instance has a _TopicImpl that</span>
+<span class="sd">        actually controls the topic resources so that multiple Topic</span>
+<span class="sd">        instances use the same underlying connections. &#39;Acquiring&#39; a</span>
+<span class="sd">        topic implementation marks that another Topic instance is</span>
+<span class="sd">        using the TopicImpl.</span>
+<span class="sd">        </span>
+<span class="sd">        @param resolved_name: resolved topic name</span>
+<span class="sd">        @type  resolved_name: str</span>
+<span class="sd">        </span>
+<span class="sd">        @param reg_type: L{rospy.registration.Registration.PUB} or L{rospy.registration.Registration.SUB}</span>
+<span class="sd">        @type  reg_type: str</span>
+<span class="sd">        </span>
+<span class="sd">        @param data_class: message class for topic</span>
+<span class="sd">        @type  data_class: L{Message} class</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">reg_type</span> <span class="o">==</span> <span class="n">Registration</span><span class="o">.</span><span class="n">PUB</span><span class="p">:</span>
+            <span class="n">rmap</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pubs</span>
+            <span class="n">impl_class</span> <span class="o">=</span> <span class="n">_PublisherImpl</span>
+        <span class="k">elif</span> <span class="n">reg_type</span> <span class="o">==</span> <span class="n">Registration</span><span class="o">.</span><span class="n">SUB</span><span class="p">:</span>
+            <span class="n">rmap</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">subs</span>
+            <span class="n">impl_class</span> <span class="o">=</span> <span class="n">_SubscriberImpl</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;invalid reg_type: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="n">reg_type</span><span class="p">)</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
+            <span class="n">impl</span> <span class="o">=</span> <span class="n">rmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">resolved_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>            
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">impl</span><span class="p">:</span>
+                <span class="n">impl</span> <span class="o">=</span> <span class="n">impl_class</span><span class="p">(</span><span class="n">resolved_name</span><span class="p">,</span> <span class="n">data_class</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_add</span><span class="p">(</span><span class="n">impl</span><span class="p">,</span> <span class="n">rmap</span><span class="p">,</span> <span class="n">reg_type</span><span class="p">)</span>
+            <span class="n">impl</span><span class="o">.</span><span class="n">ref_count</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="n">impl</span>
+
+    <span class="k">def</span> <span class="nf">release_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reg_type</span><span class="p">,</span> <span class="n">resolved_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Release a L_{TopicImpl} for the specified topic.</span>
+
+<span class="sd">        Every L{Topic} instance has a _TopicImpl that actually</span>
+<span class="sd">        controls the topic resources so that multiple Topic instances</span>
+<span class="sd">        use the same underlying connections. &#39;Acquiring&#39; a topic</span>
+<span class="sd">        implementation marks that another Topic instance is using the</span>
+<span class="sd">        TopicImpl.</span>
+
+<span class="sd">        @param resolved_name: resolved topic name</span>
+<span class="sd">        @type  resolved_name: str</span>
+<span class="sd">        @param reg_type: L{rospy.registration.Registration.PUB} or L{rospy.registration.Registration.SUB}</span>
+<span class="sd">        @type  reg_type: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">reg_type</span> <span class="o">==</span> <span class="n">Registration</span><span class="o">.</span><span class="n">PUB</span><span class="p">:</span>
+            <span class="n">rmap</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pubs</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rmap</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">subs</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
+            <span class="c1"># check for race condition where multiple things are cleaning up at once</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="n">impl</span> <span class="o">=</span> <span class="n">rmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">resolved_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">impl</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;cannot release topic impl as impl [</span><span class="si">%s</span><span class="s2">] does not exist&quot;</span><span class="o">%</span><span class="n">resolved_name</span>
+            <span class="n">impl</span><span class="o">.</span><span class="n">ref_count</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">assert</span> <span class="n">impl</span><span class="o">.</span><span class="n">ref_count</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;topic impl&#39;s reference count has gone below zero&quot;</span>
+            <span class="k">if</span> <span class="n">impl</span><span class="o">.</span><span class="n">ref_count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">rospyinfo</span><span class="p">(</span><span class="s2">&quot;topic impl&#39;s ref count is zero, deleting topic </span><span class="si">%s</span><span class="s2">...&quot;</span><span class="p">,</span> <span class="n">resolved_name</span><span class="p">)</span>
+                <span class="n">impl</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_remove</span><span class="p">(</span><span class="n">impl</span><span class="p">,</span> <span class="n">rmap</span><span class="p">,</span> <span class="n">reg_type</span><span class="p">)</span>
+                <span class="k">del</span> <span class="n">impl</span>
+                <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;... done deleting topic </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">resolved_name</span><span class="p">)</span>
+                
+    <span class="k">def</span> <span class="nf">get_publisher_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resolved_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        @param resolved_name: resolved topic name</span>
+<span class="sd">        @type  resolved_name: str</span>
+<span class="sd">        @return: list of L{_PublisherImpl}s</span>
+<span class="sd">        @rtype: [L{_PublisherImpl}]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pubs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">resolved_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_subscriber_impl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resolved_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        @param resolved_name: topic name</span>
+<span class="sd">        @type  resolved_name: str</span>
+<span class="sd">        @return: subscriber for the specified topic. </span>
+<span class="sd">        @rtype: L{_SubscriberImpl}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">subs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">resolved_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">has_subscription</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resolved_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        @param resolved_name: resolved topic name</span>
+<span class="sd">        @type  resolved_name: str</span>
+<span class="sd">        @return: True if manager has subscription for specified topic</span>
+<span class="sd">        @rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>                
+        <span class="k">return</span> <span class="n">resolved_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subs</span>
+
+    <span class="k">def</span> <span class="nf">has_publication</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resolved_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        @param resolved_name: resolved topic name</span>
+<span class="sd">        @type  resolved_name: str</span>
+<span class="sd">        @return: True if manager has publication for specified topic</span>
+<span class="sd">        @rtype:  bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">resolved_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pubs</span>
+
+    <span class="k">def</span> <span class="nf">get_topics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        @return: list of topic names this node subscribes to/publishes</span>
+<span class="sd">        @rtype: [str]</span>
+<span class="sd">        &quot;&quot;&quot;</span>                
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">topics</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">_get_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rmap</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[[</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">type</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">rmap</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+
+    <span class="c1">## @return [[str,str],]: list of topics subscribed to by this node, [ [topic1, topicType1]...[topicN, topicTypeN]]</span>
+    <span class="k">def</span> <span class="nf">get_subscriptions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subs</span><span class="p">)</span>
+
+    <span class="c1">## @return [[str,str],]: list of topics published by this node, [ [topic1, topicType1]...[topicN, topicTypeN]]</span>
+    <span class="k">def</span> <span class="nf">get_publications</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pubs</span><span class="p">)</span>
+
+<span class="n">set_topic_manager</span><span class="p">(</span><span class="n">_TopicManager</span><span class="p">())</span>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Samuele Depalo.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

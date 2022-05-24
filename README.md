@@ -3,8 +3,6 @@ This is a simple robot simulator that replace and improves the [Original](https:
 The robot is able to constantly drive in the arena avoiding the golden boxes.
 Occasionally, when they are close, it is capable of grabbing and releasing the silver ones.  
 
-You can find the whole documentation of the code [here](https://samueled98.github.io/rt_assignment1/) (as requested in the first assignment of the RT2 course)
-
 ## Installing and running
 The simulator requires a Python 2.7 installation, the [pygame](http://pygame.org/) library, [PyPyBox2D](https://pypi.python.org/pypi/pypybox2d/2.1-r331), and [PyYAML](https://pypi.python.org/pypi/PyYAML/).  
 
